@@ -1,0 +1,58 @@
+Arguments: 
+  C:\Program Files\nodejs\node.exe C:\Users\pjc02\.node\corepack\yarn\1.22.15\bin\yarn.js add lodeash-es
+
+PATH: 
+  C:\Python310\Scripts\;C:\Python310\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\nodejs\;C:\ProgramData\chocolatey\bin;C:\Program Files\Git\cmd;C:\Program Files\Bandizip\;C:\Program Files\Kubernetes\Minikube;C:\Program Files\dotnet\;C:\Program Files\PuTTY\;%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;%SYSTEMROOT%\System32\WindowsPowerShell\v1.0\;%SYSTEMROOT%\System32\OpenSSH\;C:\Users\pjc02\.cargo\bin;C:\Users\pjc02\AppData\Local\Microsoft\WindowsApps;C:\Users\pjc02\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\pjc02\AppData\Roaming\npm;C:\Users\pjc02\AppData\Local\GitHubDesktop\bin;C:\Users\pjc02\.dotnet\tools;C:\Users\pjc02\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin;C:\Users\pjc02\AppData\Local\gitkraken\bin;%USERPROFILE%\AppData\Local\Microsoft\WindowsApps;
+
+Yarn version: 
+  1.22.15
+
+Node version: 
+  16.15.0
+
+Platform: 
+  win32 x64
+
+Trace: 
+  Error: https://registry.yarnpkg.com/lodeash-es: Not found
+      at Request.params.callback [as _callback] (C:\Users\pjc02\.node\corepack\yarn\1.22.15\lib\cli.js:66140:18)
+      at Request.self.callback (C:\Users\pjc02\.node\corepack\yarn\1.22.15\lib\cli.js:140885:22)
+      at Request.emit (node:events:527:28)
+      at Request.<anonymous> (C:\Users\pjc02\.node\corepack\yarn\1.22.15\lib\cli.js:141857:10)
+      at Request.emit (node:events:527:28)
+      at IncomingMessage.<anonymous> (C:\Users\pjc02\.node\corepack\yarn\1.22.15\lib\cli.js:141779:12)
+      at Object.onceWrapper (node:events:641:28)
+      at IncomingMessage.emit (node:events:539:35)
+      at endReadableNT (node:internal/streams/readable:1345:12)
+      at processTicksAndRejections (node:internal/process/task_queues:83:21)
+
+npm manifest: 
+  {
+    "name": "react-native-pinterest",
+    "version": "1.0.0",
+    "main": "node_modules/expo/AppEntry.js",
+    "scripts": {
+      "start": "expo start",
+      "android": "expo start --android",
+      "ios": "expo start --ios",
+      "web": "expo start --web"
+    },
+    "dependencies": {
+      "expo": "~48.0.9",
+      "expo-status-bar": "~1.4.4",
+      "react": "18.2.0",
+      "react-native": "0.71.4",
+      "react-native-reanimated": "~2.14.4",
+      "react-native-gesture-handler": "~2.9.0"
+    },
+    "devDependencies": {
+      "@babel/core": "^7.20.0"
+    },
+    "private": true
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
