@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
   Dimensions,
-  GestureResponderEvent,
   Image,
+  GestureResponderEvent,
   Pressable,
   StyleSheet,
   View,
@@ -58,8 +58,6 @@ const images = [
   require("./assets/11.jpg"),
   require("./assets/12.jpg"),
   require("./assets/13.jpg"),
-  require("./assets/14.jpg"),
-  require("./assets/15.jpg"),
 ].map((x) => ({
   url: x,
   aspectRatio:
@@ -68,7 +66,7 @@ const images = [
 
 let c = 0;
 const getImage = () => {
-  return images[c++ % 15];
+  return images[c++ % images.length];
 };
 
 const Pinterest = () => {
@@ -180,7 +178,7 @@ const ImageStackScreen = ({
   const safeArea = useSafeAreaInsets();
 
   const subImages = useMemo(() => {
-    return range(12).map((x) => {
+    return range(24).map((x) => {
       const image = getImage();
       return {
         url: image.url,
@@ -222,13 +220,15 @@ const ImageStackScreen = ({
     onEndDrag: (event, context) => {
       context.enabled = false;
 
-      if (scrollY.value < -50) {
-        runOnJS(pop)();
+      if (scrollY.value < 0) {
+        if (scrollY.value < -50) {
+          runOnJS(pop)();
+        } else {
+          scrollX.value = withSpring(0);
+          scrollY.value = withSpring(0);
+        }
+        globalScrollY.value = withSpring(0);
       }
-
-      scrollX.value = withSpring(0);
-      scrollY.value = withSpring(0);
-      globalScrollY.value = withSpring(0);
     },
   });
 
@@ -271,15 +271,15 @@ const ImageStackScreen = ({
       console.log(pageY);
 
       fade.value = withTiming(1, {
-        duration: 450,
-        easing: Easing.inOut(Easing.cubic),
+        duration: 550,
+        easing: Easing.out(Easing.exp),
       });
 
       console.log("click", index);
 
       setTimeout(() => {
         onClickItem(subImages[index], pageX, pageY, w, h);
-      }, 450);
+      }, 550);
     });
   };
 
@@ -297,14 +297,16 @@ const ImageStackScreen = ({
               translateX: interpolate(
                 fade.value,
                 [0, 1],
-                [0, -(target.x - (width + 30) / 4)]
+                [0, -(target.x - (width + 30) / 4)],
+                Extrapolate.CLAMP
               ),
             },
             {
               translateY: interpolate(
                 fade.value,
                 [0, 1],
-                [0, -(target.y - height / 4) + safeArea.top]
+                [0, -(target.y - height / 4) + safeArea.top],
+                Extrapolate.CLAMP
               ),
             },
           ],
@@ -313,8 +315,17 @@ const ImageStackScreen = ({
         // fade 1 -> 0
         console.log("hii", fade.value);
         return {
-          opacity: interpolate(fade.value, [1, 0], [1, 1]),
-          transform: [{ scale: interpolate(fade.value, [1, 0], [1.09, 1]) }],
+          opacity: interpolate(fade.value, [1, 0], [1, 1], Extrapolate.CLAMP),
+          transform: [
+            {
+              scale: interpolate(
+                fade.value,
+                [1, 0],
+                [1.09, 1],
+                Extrapolate.CLAMP
+              ),
+            },
+          ],
         };
       }
     }
@@ -326,7 +337,12 @@ const ImageStackScreen = ({
     return {
       opacity: active
         ? 1
-        : interpolate(globalScrollY.value, [-200, 0], [0.65, 0]),
+        : interpolate(
+            globalScrollY.value,
+            [-200, 0],
+            [0.65, 0],
+            Extrapolate.CLAMP
+          ),
       transform: active
         ? [
             { scale: Math.max(0.8, (200 + scrollY.value) * 0.005) },
@@ -337,22 +353,41 @@ const ImageStackScreen = ({
                   { perspective: width },
                   {
                     rotateY:
-                      interpolate(slideBackX.value, [0, 70], [0, 7]) + "deg",
+                      interpolate(
+                        slideBackX.value,
+                        [0, 70],
+                        [0, 7],
+                        Extrapolate.CLAMP
+                      ) + "deg",
                   },
                   {
-                    translateX: interpolate(slideBackX.value, [0, 70], [0, 50]),
+                    translateX: interpolate(
+                      slideBackX.value,
+                      [0, 70],
+                      [0, 50],
+                      Extrapolate.CLAMP
+                    ),
                   },
                 ]
               : []),
           ]
-        : [{ scale: interpolate(globalScrollY.value, [-200, 0], [1, 1.1]) }],
+        : [
+            {
+              scale: interpolate(
+                globalScrollY.value,
+                [-200, 0],
+                [1, 1.1],
+                Extrapolate.CLAMP
+              ),
+            },
+          ],
     };
   }, [target, active, stack]);
 
   const topImageStyle = useAnimatedStyle(() => {
     return {
       borderRadius: active
-        ? interpolate(scrollY.value, [-200, 0], [height, 45])
+        ? interpolate(scrollY.value, [-200, 0], [80, 45], Extrapolate.CLAMP)
         : 45,
     };
   });
@@ -383,6 +418,144 @@ const ImageStackScreen = ({
           ),
         },
       ],
+    };
+  });
+
+  const activeImageStyle = useAnimatedStyle(() => {
+    return {
+      opacity: 1,
+    };
+  });
+
+  const inactiveImageStyle = useAnimatedStyle(() => {
+    return {
+      opacity: active
+        ? direction.value === "forward"
+          ? 1 - fade.value
+          : interpolate(fade.value, [0, 1], [1, 0.35], Extrapolate.CLAMP)
+        : 1,
+    };
+  });
+
+  useEffect(() => {
+    if (active && fade.value === 1) {
+      direction.value = "backward";
+      fade.value = withTiming(0, {
+        duration: 600,
+        easing: Easing.out(Easing.exp),
+      });
+    }
+  }, [active]);
+
+  return (
+    <PanGestureHandler
+      simultaneousHandlers={ref}
+      onGestureEvent={gestureHandler}
+    >
+      <Animated.View style={{ flex: 1 }}>
+        <NativeViewGestureHandler ref={ref}>
+          <Animated.ScrollView
+            scrollEventThrottle={1}
+            showsVerticalScrollIndicator={false}
+            style={[{ flex: 1, overflow: "visible" }, style]}
+            onScroll={scrollHandler}
+          >
+            <AnimatedFastImage
+              ref={mainImageRef}
+              source={data.url}
+              resizeMode="cover"
+              style={[
+                {
+                  width: width,
+                  height: width * (1 / Math.min(1, data.aspectRatio)),
+                },
+                topImageStyle,
+                direction.value === "forward" &&
+                !isNil(target.index) &&
+                target.index !== index
+                  ? inactiveImageStyle
+                  : activeImageStyle,
+              ]}
+            />
+
+            <MasonryList style={masonryListStyle}>
+              {subImages.map(({ url, aspectRatio }, index) => (
+                <ListItem
+                  key={index}
+                  fade={fade}
+                  scrollY={scrollY}
+                  direction={direction}
+                  stack={stack}
+                  active={active}
+                  activeIndex={target.index}
+                  index={index}
+                  url={url}
+                  aspectRatio={aspectRatio}
+                  onPress={(e) => handlePress(e, index)}
+                />
+              ))}
+            </MasonryList>
+          </Animated.ScrollView>
+        </NativeViewGestureHandler>
+      </Animated.View>
+    </PanGestureHandler>
+  );
+};
+
+interface ListItemProps {
+  stack: any[];
+  fade: SharedValue<number>;
+  scrollY: SharedValue<number>;
+  direction: SharedValue<"forward" | "backward">;
+  active: boolean;
+  activeIndex: number | undefined;
+  index: number;
+  url: string;
+  aspectRatio: number;
+  onPress: (e: GestureResponderEvent) => void;
+}
+const ListItem = ({
+  stack,
+  fade,
+  scrollY,
+  direction,
+  active,
+  activeIndex,
+  index,
+  url,
+  aspectRatio,
+  onPress,
+}: ListItemProps) => {
+  const containerStyle = useAnimatedStyle(() => {
+    return {
+      transform: active
+        ? [
+            {
+              translateY: interpolate(
+                scrollY.value,
+                [-200, 0],
+                [-200 - index * 200, 0],
+                Extrapolate.CLAMP
+              ),
+            },
+            {
+              translateX: interpolate(
+                scrollY.value,
+                [-200, 0],
+                [index % 2 ? -200 : 200, 0],
+                Extrapolate.CLAMP
+              ),
+            },
+            {
+              scale: interpolate(
+                scrollY.value,
+                [-200, 0],
+                [0.5, 1],
+                Extrapolate.CLAMP
+              ),
+            },
+          ]
+        : [],
     };
   });
 
@@ -442,89 +615,38 @@ const ImageStackScreen = ({
       opacity: active
         ? direction.value === "forward"
           ? 1 - fade.value
-          : interpolate(fade.value, [0, 1], [1, 0.35])
+          : interpolate(fade.value, [0, 1], [1, 0.35], Extrapolate.CLAMP)
         : 1,
     };
   });
 
-  useEffect(() => {
-    if (active && fade.value === 1) {
-      direction.value = "backward";
-      fade.value = withTiming(0, {
-        duration: 600,
-        easing: Easing.out(Easing.exp),
-      });
-    }
-  }, [active]);
-
   return (
-    <PanGestureHandler
-      simultaneousHandlers={ref}
-      onGestureEvent={gestureHandler}
+    <ImageItem
+      style={{
+        width: "100%",
+        aspectRatio: Math.min(1, aspectRatio), //(width * 1.75) / 2,
+      }}
+      onPress={onPress}
     >
-      <Animated.View style={{ flex: 1 }}>
-        <NativeViewGestureHandler ref={ref}>
-          <Animated.ScrollView
-            scrollEventThrottle={1}
-            showsVerticalScrollIndicator={false}
-            style={[{ flex: 1, overflow: "visible" }, style]}
-            onScroll={scrollHandler}
-          >
-            <AnimatedFastImage
-              ref={mainImageRef}
-              source={data.url}
-              defaultSource={data.url}
-              resizeMode="cover"
-              style={[
-                {
-                  width: width,
-                  height: width * (1 / Math.min(1, data.aspectRatio)),
-                },
-                topImageStyle,
-                direction.value === "forward" &&
-                !isNil(target.index) &&
-                target.index !== index
-                  ? inactiveImageStyle
-                  : activeImageStyle,
-              ]}
-            />
+      <Animated.View style={[containerStyle, { flex: 1 }]}>
+        <AnimatedFastImage
+          source={url}
+          resizeMode="cover"
+          style={[
+            { backgroundColor: "rgba(64,64,64, 0.6)" },
+            { width: "100%", height: "100%", borderRadius: 10 }, //(width * 1.75) / 2 },
 
-            <MasonryList style={masonryListStyle}>
-              {subImages.map(({ url, aspectRatio }, index) => (
-                <ImageItem
-                  key={index}
-                  style={{
-                    width: "100%",
-                    aspectRatio: Math.min(1, aspectRatio), //(width * 1.75) / 2,
-                  }}
-                  onPress={(e) => handlePress(e, index)}
-                >
-                  <Animated.View style={[{ flex: 1 }]}>
-                    <AnimatedFastImage
-                      source={url}
-                      //defaultSource={url}
-                      resizeMode="cover"
-                      style={[
-                        { backgroundColor: "rgba(64,64,64, 0.6)" },
-                        { width: "100%", height: "100%", borderRadius: 10 }, //(width * 1.75) / 2 },
+            !isNil(activeIndex) && activeIndex !== index
+              ? inactiveImageStyle
+              : activeImageStyle,
 
-                        !isNil(target.index) && target.index !== index
-                          ? inactiveImageStyle
-                          : activeImageStyle,
+            activeIndex === index && flyImageStyle,
 
-                        target.index === index && flyImageStyle,
-
-                        target.index === index && !active && { opacity: 0 },
-                      ]}
-                    />
-                  </Animated.View>
-                </ImageItem>
-              ))}
-            </MasonryList>
-          </Animated.ScrollView>
-        </NativeViewGestureHandler>
+            activeIndex === index && !active && { opacity: 0 },
+          ]}
+        />
       </Animated.View>
-    </PanGestureHandler>
+    </ImageItem>
   );
 };
 
