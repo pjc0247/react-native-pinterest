@@ -173,6 +173,7 @@ const ImageStackScreen = ({
   const ref = useRef();
   const mainImageRef = useRef();
   const fade = useSharedValue(0);
+  const slideBackX = useSharedValue(0);
   const scrollY = useSharedValue(0);
   const direction = useSharedValue<"forward" | "backward">("forward");
   const [target, setTarget] = useState({});
@@ -238,6 +239,9 @@ const ImageStackScreen = ({
       context.enabled = true;
       context.startX = event.x;
     },
+    onFinish: (event, context) => {
+      slideBackX.value = 0;
+    },
     onActive: (event, context) => {
       const dx = context.startX - event.x;
 
@@ -247,14 +251,14 @@ const ImageStackScreen = ({
 
       scrollX.value = event.translationX;
 
-      if (context.startX <= 30 && dx <= -60) {
-        console.log("back");
+      if (context.startX <= 30) {
+        slideBackX.value = event.translationX;
 
-        context.enabled = false;
+        if (dx <= -75) {
+          context.enabled = false;
 
-        runOnJS(pop)();
-
-        return false;
+          runOnJS(pop)();
+        }
       }
     },
   });
@@ -300,7 +304,7 @@ const ImageStackScreen = ({
               translateY: interpolate(
                 fade.value,
                 [0, 1],
-                [0, -(target.y - height / 4)]
+                [0, -(target.y - height / 4) + safeArea.top]
               ),
             },
           ],
@@ -327,6 +331,19 @@ const ImageStackScreen = ({
         ? [
             { scale: Math.max(0.8, (200 + scrollY.value) * 0.005) },
             { translateX: scrollY.value < 0 ? scrollX.value * 0.5 : 0 },
+
+            ...(slideBackX.value > 0
+              ? [
+                  { perspective: width },
+                  {
+                    rotateY:
+                      interpolate(slideBackX.value, [0, 70], [0, 7]) + "deg",
+                  },
+                  {
+                    translateX: interpolate(slideBackX.value, [0, 70], [0, 50]),
+                  },
+                ]
+              : []),
           ]
         : [{ scale: interpolate(globalScrollY.value, [-200, 0], [1, 1.1]) }],
     };
@@ -344,7 +361,9 @@ const ImageStackScreen = ({
     return {
       zIndex: -1,
       opacity: active
-        ? interpolate(scrollY.value, [-100, 0], [0, 1], Extrapolate.CLAMP) ** 4
+        ? interpolate(scrollY.value, [-100, 0], [0, 1], Extrapolate.CLAMP) **
+            4 *
+          interpolate(slideBackX.value, [0, 70], [1, 0], Extrapolate.CLAMP)
         : 1,
       transform: [
         {
@@ -483,9 +502,10 @@ const ImageStackScreen = ({
                   <Animated.View style={[{ flex: 1 }]}>
                     <AnimatedFastImage
                       source={url}
-                      defaultSource={url}
+                      //defaultSource={url}
                       resizeMode="cover"
                       style={[
+                        { backgroundColor: "rgba(64,64,64, 0.6)" },
                         { width: "100%", height: "100%", borderRadius: 10 }, //(width * 1.75) / 2 },
 
                         !isNil(target.index) && target.index !== index
