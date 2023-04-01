@@ -25,6 +25,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { range, isNil } from "lodash-es";
+import MasonryList from "./MasonryList";
 
 const { width, height } = Dimensions.get("screen");
 
@@ -115,8 +116,6 @@ const Pinterest = () => {
     ]);
   }, []);
 
-  console.log("ss", stack.length);
-
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
       {stack.map((x, index) => (
@@ -190,6 +189,10 @@ const ImageStackScreen = ({
       }
     },
     onBeginDrag: (event, context) => {
+      if (stack.length === 1) {
+        return false;
+      }
+
       context.enabled = true;
     },
     onEndDrag: (event, context) => {
@@ -364,53 +367,54 @@ const ImageStackScreen = ({
     >
       <Animated.View style={{ flex: 1 }}>
         <NativeViewGestureHandler ref={ref}>
-          <Animated.FlatList
-            ListHeaderComponent={
-              <AnimatedFastImage
-                ref={mainImageRef}
-                source={data.url}
-                defaultSource={data.url}
-                style={[
-                  { width: "100%", height: width * 1.75 },
-                  topImageStyle,
-                  direction.value === "forward" &&
-                  !isNil(target.index) &&
-                  target.index !== index
-                    ? inactiveImageStyle
-                    : { opacity: 1 },
-                ]}
-              />
-            }
+          <Animated.ScrollView
             scrollEventThrottle={1}
             showsVerticalScrollIndicator={false}
             style={[{ flex: 1, overflow: "visible" }, style]}
-            numColumns={2}
-            data={subImages}
-            renderItem={({ item, index }) => (
-              <Pressable
-                style={{ flex: 1, height: (width * 1.75) / 2 }}
-                onPress={(e) => handlePress(e, index)}
-              >
-                <Animated.View style={[{ flex: 1 }, imageStyle]}>
-                  <AnimatedFastImage
-                    source={item}
-                    defaultSource={item}
-                    resizeMode="cover"
-                    style={[
-                      { width: width / 2, height: (width * 1.75) / 2 },
-
-                      !isNil(target.index) && target.index !== index
-                        ? inactiveImageStyle
-                        : { opacity: 1 },
-
-                      target.index === index && flyImageStyle,
-                    ]}
-                  />
-                </Animated.View>
-              </Pressable>
-            )}
             onScroll={scrollHandler}
-          />
+          >
+            <AnimatedFastImage
+              ref={mainImageRef}
+              source={data.url}
+              defaultSource={data.url}
+              style={[
+                { width: "100%", height: width * 1.75 },
+                topImageStyle,
+                direction.value === "forward" &&
+                !isNil(target.index) &&
+                target.index !== index
+                  ? inactiveImageStyle
+                  : { opacity: 1 },
+              ]}
+            />
+
+            <MasonryList>
+              {subImages.map((item, index) => (
+                <Pressable
+                  key={index}
+                  style={{ flex: 1, height: (width * 1.75) / 2 }}
+                  onPress={(e) => handlePress(e, index)}
+                >
+                  <Animated.View style={[{ flex: 1 }, imageStyle]}>
+                    <AnimatedFastImage
+                      source={item}
+                      defaultSource={item}
+                      resizeMode="cover"
+                      style={[
+                        { width: width / 2, height: (width * 1.75) / 2 },
+
+                        !isNil(target.index) && target.index !== index
+                          ? inactiveImageStyle
+                          : { opacity: 1 },
+
+                        target.index === index && flyImageStyle,
+                      ]}
+                    />
+                  </Animated.View>
+                </Pressable>
+              ))}
+            </MasonryList>
+          </Animated.ScrollView>
         </NativeViewGestureHandler>
       </Animated.View>
     </PanGestureHandler>
