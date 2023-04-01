@@ -234,8 +234,28 @@ const ImageStackScreen = ({
   console.log(subImages);
 
   const gestureHandler = useAnimatedGestureHandler({
-    onActive: (event) => {
+    onStart: (event, context) => {
+      context.enabled = true;
+      context.startX = event.x;
+    },
+    onActive: (event, context) => {
+      const dx = context.startX - event.x;
+
+      if (!context.enabled) {
+        return false;
+      }
+
       scrollX.value = event.translationX;
+
+      if (context.startX <= 30 && dx <= -60) {
+        console.log("back");
+
+        context.enabled = false;
+
+        runOnJS(pop)();
+
+        return false;
+      }
     },
   });
 
@@ -264,7 +284,6 @@ const ImageStackScreen = ({
       if (direction.value === "forward") {
         // fade 0 -> 1
         return {
-          paddingTop: safeArea.top,
           opacity: 1,
           transform: [
             {
@@ -303,7 +322,7 @@ const ImageStackScreen = ({
     return {
       opacity: active
         ? 1
-        : interpolate(globalScrollY.value, [-200, 0], [0.65, 0.18]),
+        : interpolate(globalScrollY.value, [-200, 0], [0.65, 0]),
       transform: active
         ? [
             { scale: Math.max(0.8, (200 + scrollY.value) * 0.005) },
@@ -316,14 +335,35 @@ const ImageStackScreen = ({
   const topImageStyle = useAnimatedStyle(() => {
     return {
       borderRadius: active
-        ? interpolate(scrollY.value, [-200, 0], [260, 20])
-        : 1,
+        ? interpolate(scrollY.value, [-200, 0], [height, 45])
+        : 45,
     };
   });
 
   const masonryListStyle = useAnimatedStyle(() => {
     return {
-      opacity: active ? interpolate(scrollY.value, [-100, 0], [0, 1]) ** 2 : 1,
+      zIndex: -1,
+      opacity: active
+        ? interpolate(scrollY.value, [-100, 0], [0, 1], Extrapolate.CLAMP) ** 4
+        : 1,
+      transform: [
+        {
+          translateY: interpolate(
+            scrollY.value,
+            [-100, 0],
+            [-500, 0],
+            Extrapolate.CLAMP
+          ),
+        },
+        {
+          scale: interpolate(
+            scrollY.value,
+            [-100, 0],
+            [0.8, 1],
+            Extrapolate.CLAMP
+          ),
+        },
+      ],
     };
   });
 
@@ -338,7 +378,7 @@ const ImageStackScreen = ({
       zIndex: 1,
       borderRadius:
         direction.value === "backward"
-          ? interpolate(fade.value, [1, 0], [45, 20])
+          ? interpolate(fade.value, [1, 0], [45, 10], Extrapolate.CLAMP)
           : 20,
       transform:
         direction.value === "backward"
@@ -347,21 +387,24 @@ const ImageStackScreen = ({
                 translateX: interpolate(
                   fade.value,
                   [1, 0],
-                  [top.x2 - top.x + width / 5, 0]
+                  [top.x2 - top.x + width / 5, 0],
+                  Extrapolate.CLAMP
                 ),
               },
               {
                 translateY: interpolate(
                   fade.value,
                   [1, 0],
-                  [top.y2 - top.y + height / 7, 0]
+                  [top.y2 - top.y + height / 7, 0],
+                  Extrapolate.CLAMP
                 ),
               },
               {
                 scale: interpolate(
                   fade.value,
                   [1, 0],
-                  [top.w2 / (width / 2), 1]
+                  [top.w2 / (width / 2), 1],
+                  Extrapolate.CLAMP
                 ),
               },
             ]
@@ -443,13 +486,15 @@ const ImageStackScreen = ({
                       defaultSource={url}
                       resizeMode="cover"
                       style={[
-                        { width: "100%", height: "100%", borderRadius: 20 }, //(width * 1.75) / 2 },
+                        { width: "100%", height: "100%", borderRadius: 10 }, //(width * 1.75) / 2 },
 
                         !isNil(target.index) && target.index !== index
                           ? inactiveImageStyle
                           : activeImageStyle,
 
                         target.index === index && flyImageStyle,
+
+                        target.index === index && !active && { opacity: 0 },
                       ]}
                     />
                   </Animated.View>
