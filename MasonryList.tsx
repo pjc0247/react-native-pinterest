@@ -1,6 +1,10 @@
 import React from "react";
-import { View } from "react-native";
+import { Dimensions, View } from "react-native";
 import styled from "styled-components/native";
+
+const { width } = Dimensions.get("window");
+
+const Gap = 10;
 
 export interface MasonryListProps {
   children: React.ReactNode;
@@ -22,10 +26,15 @@ const Container = styled.View`
   width: 100%;
 
   flex-direction: row;
+
+  gap: ${Gap}px;
+  padding: ${Gap}px;
 `;
 
 const Column = styled.View`
-  width: 50%;
+  width: ${width / 2 - Gap * 1.5}px;
+
+  gap: ${Gap}px;
 `;
 
 export default MasonryList;

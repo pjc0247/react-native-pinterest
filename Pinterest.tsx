@@ -26,6 +26,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { range, isNil } from "lodash-es";
 import MasonryList from "./MasonryList";
+import styled from "styled-components/native";
 
 const { width, height } = Dimensions.get("screen");
 
@@ -33,6 +34,7 @@ const AnimatedFastImage = Animated.createAnimatedComponent(Image);
 
 interface StackItem {
   url: string;
+  aspectRatio: number;
   x: number;
   y: number;
   w: number;
@@ -89,7 +91,7 @@ const Pinterest = () => {
         y,
         w,
         h,
-        url,
+        ...url,
       },
     ]);
   };
@@ -109,9 +111,14 @@ const Pinterest = () => {
   };
 
   useEffect(() => {
+    const image = getImage();
+
     setStack([
       {
-        url: getImage(),
+        url: image,
+        aspectRatio:
+          Image.resolveAssetSource(image).width /
+          Image.resolveAssetSource(image).height,
       },
     ]);
   }, []);
@@ -163,7 +170,15 @@ const ImageStackScreen = ({
   const [target, setTarget] = useState({});
 
   const subImages = useMemo(() => {
-    return range(12).map((x) => getImage());
+    return range(12).map((x) => {
+      const image = getImage();
+      return {
+        url: image,
+        aspectRatio:
+          Image.resolveAssetSource(image).width /
+          Image.resolveAssetSource(image).height,
+      };
+    });
   }, []);
 
   const pop = () => {
@@ -207,7 +222,7 @@ const ImageStackScreen = ({
     },
   });
 
-  console.log(scrollY.value);
+  console.log(subImages);
 
   const gestureHandler = useAnimatedGestureHandler({
     onActive: (event) => {
@@ -288,7 +303,9 @@ const ImageStackScreen = ({
 
   const topImageStyle = useAnimatedStyle(() => {
     return {
-      borderRadius: active ? interpolate(scrollY.value, [-200, 0], [45, 0]) : 1,
+      borderRadius: active
+        ? interpolate(scrollY.value, [-200, 0], [45, 20])
+        : 1,
     };
   });
 
@@ -340,6 +357,13 @@ const ImageStackScreen = ({
     };
   });
 
+  const activeImageStyle = useAnimatedStyle(() => {
+    return {
+      opacity: 1,
+      borderRadius: interpolate(fade.value, [0, 1], [20, 0]),
+    };
+  });
+
   const inactiveImageStyle = useAnimatedStyle(() => {
     return {
       opacity: active
@@ -370,6 +394,7 @@ const ImageStackScreen = ({
           <Animated.ScrollView
             scrollEventThrottle={1}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ marginTop: 56 }}
             style={[{ flex: 1, overflow: "visible" }, style]}
             onScroll={scrollHandler}
           >
@@ -377,41 +402,49 @@ const ImageStackScreen = ({
               ref={mainImageRef}
               source={data.url}
               defaultSource={data.url}
+              resizeMode="cover"
               style={[
-                { width: "100%", height: width * 1.75 },
+                {
+                  width: width,
+                  height: width * (1 / data.aspectRatio),
+                },
                 topImageStyle,
                 direction.value === "forward" &&
                 !isNil(target.index) &&
                 target.index !== index
                   ? inactiveImageStyle
-                  : { opacity: 1 },
+                  : activeImageStyle,
               ]}
             />
 
             <MasonryList>
-              {subImages.map((item, index) => (
-                <Pressable
+              {subImages.map(({ url, aspectRatio }, index) => (
+                <ImageItem
                   key={index}
-                  style={{ flex: 1, height: (width * 1.75) / 2 }}
+                  style={{
+                    width: "100%",
+                    aspectRatio: Math.min(1, aspectRatio), //(width * 1.75) / 2,
+                    opacity: target.index === index ? 0.5 : 1,
+                  }}
                   onPress={(e) => handlePress(e, index)}
                 >
                   <Animated.View style={[{ flex: 1 }, imageStyle]}>
                     <AnimatedFastImage
-                      source={item}
-                      defaultSource={item}
+                      source={url}
+                      defaultSource={url}
                       resizeMode="cover"
                       style={[
-                        { width: width / 2, height: (width * 1.75) / 2 },
+                        { width: "100%", height: "100%", borderRadius: 20 }, //(width * 1.75) / 2 },
 
                         !isNil(target.index) && target.index !== index
                           ? inactiveImageStyle
-                          : { opacity: 1 },
+                          : activeImageStyle,
 
                         target.index === index && flyImageStyle,
                       ]}
                     />
                   </Animated.View>
-                </Pressable>
+                </ImageItem>
               ))}
             </MasonryList>
           </Animated.ScrollView>
@@ -420,5 +453,9 @@ const ImageStackScreen = ({
     </PanGestureHandler>
   );
 };
+
+const ImageItem = styled.Pressable`
+  background: black;
+`;
 
 export default Pinterest;
