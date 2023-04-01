@@ -1,17 +1,21 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from "react-native";
+import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import Pinterest from "./Pinterest";
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Pinterest />
-    </View>
+    <SafeAreaProvider>
+      <SafeAreaView edges={["top"]} style={styles.container}>
+        <Pinterest />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "black",
   },
 });

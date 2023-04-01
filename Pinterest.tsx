@@ -27,8 +27,11 @@ import Animated, {
 import { range, isNil } from "lodash-es";
 import MasonryList from "./MasonryList";
 import styled from "styled-components/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width, height } = Dimensions.get("screen");
+const { width, height: deviceHeight } = Dimensions.get("screen");
+
+const height = deviceHeight;
 
 const AnimatedFastImage = Animated.createAnimatedComponent(Image);
 
@@ -41,25 +44,31 @@ interface StackItem {
   h: number;
 }
 
+const images = [
+  require("./assets/1.jpg"),
+  require("./assets/2.jpg"),
+  require("./assets/3.jpg"),
+  require("./assets/4.jpg"),
+  require("./assets/5.jpg"),
+  require("./assets/6.jpg"),
+  require("./assets/7.jpg"),
+  require("./assets/8.jpg"),
+  require("./assets/9.jpg"),
+  require("./assets/10.jpg"),
+  require("./assets/11.jpg"),
+  require("./assets/12.jpg"),
+  require("./assets/13.jpg"),
+  require("./assets/14.jpg"),
+  require("./assets/15.jpg"),
+].map((x) => ({
+  url: x,
+  aspectRatio:
+    Image.resolveAssetSource(x).width / Image.resolveAssetSource(x).height,
+}));
+
 let c = 0;
 const getImage = () => {
-  return [
-    require("./assets/1.jpg"),
-    require("./assets/2.jpg"),
-    require("./assets/3.jpg"),
-    require("./assets/4.jpg"),
-    require("./assets/5.jpg"),
-    require("./assets/6.jpg"),
-    require("./assets/7.jpg"),
-    require("./assets/8.jpg"),
-    require("./assets/9.jpg"),
-    require("./assets/10.jpg"),
-    require("./assets/11.jpg"),
-    require("./assets/12.jpg"),
-    require("./assets/13.jpg"),
-    require("./assets/14.jpg"),
-    require("./assets/15.jpg"),
-  ][c++ % 15];
+  return images[c++ % 15];
 };
 
 const Pinterest = () => {
@@ -115,10 +124,8 @@ const Pinterest = () => {
 
     setStack([
       {
-        url: image,
-        aspectRatio:
-          Image.resolveAssetSource(image).width /
-          Image.resolveAssetSource(image).height,
+        url: image.url,
+        aspectRatio: image.aspectRatio,
       },
     ]);
   }, []);
@@ -158,7 +165,7 @@ const ImageStackScreen = ({
   active,
   stack,
   scrollX,
-  scrollY,
+  scrollY: globalScrollY,
   data,
   onClickItem,
   onPop,
@@ -166,17 +173,17 @@ const ImageStackScreen = ({
   const ref = useRef();
   const mainImageRef = useRef();
   const fade = useSharedValue(0);
+  const scrollY = useSharedValue(0);
   const direction = useSharedValue<"forward" | "backward">("forward");
   const [target, setTarget] = useState({});
+  const safeArea = useSafeAreaInsets();
 
   const subImages = useMemo(() => {
     return range(12).map((x) => {
       const image = getImage();
       return {
-        url: image,
-        aspectRatio:
-          Image.resolveAssetSource(image).width /
-          Image.resolveAssetSource(image).height,
+        url: image.url,
+        aspectRatio: image.aspectRatio,
       };
     });
   }, []);
@@ -201,6 +208,7 @@ const ImageStackScreen = ({
       if (y < 0) {
         console.log("sescrolly");
         scrollY.value = y;
+        globalScrollY.value = y;
       }
     },
     onBeginDrag: (event, context) => {
@@ -219,6 +227,7 @@ const ImageStackScreen = ({
 
       scrollX.value = withSpring(0);
       scrollY.value = withSpring(0);
+      globalScrollY.value = withSpring(0);
     },
   });
 
@@ -255,16 +264,17 @@ const ImageStackScreen = ({
       if (direction.value === "forward") {
         // fade 0 -> 1
         return {
+          paddingTop: safeArea.top,
           opacity: 1,
           transform: [
             {
-              scale: 1 + fade.value,
+              scale: 1 + fade.value + 60 / width,
             },
             {
               translateX: interpolate(
                 fade.value,
                 [0, 1],
-                [0, -(target.x - width / 4)]
+                [0, -(target.x - (width + 30) / 4)]
               ),
             },
             {
@@ -291,27 +301,29 @@ const ImageStackScreen = ({
     }
 
     return {
-      opacity: active ? 1 : interpolate(scrollY.value, [-200, 0], [0.35, 0.18]),
+      opacity: active
+        ? 1
+        : interpolate(globalScrollY.value, [-200, 0], [0.65, 0.18]),
       transform: active
         ? [
             { scale: Math.max(0.8, (200 + scrollY.value) * 0.005) },
             { translateX: scrollY.value < 0 ? scrollX.value * 0.5 : 0 },
           ]
-        : [{ scale: interpolate(scrollY.value, [-200, 0], [1, 1.09]) }],
+        : [{ scale: interpolate(globalScrollY.value, [-200, 0], [1, 1.1]) }],
     };
   }, [target, active, stack]);
 
   const topImageStyle = useAnimatedStyle(() => {
     return {
       borderRadius: active
-        ? interpolate(scrollY.value, [-200, 0], [45, 20])
+        ? interpolate(scrollY.value, [-200, 0], [260, 20])
         : 1,
     };
   });
 
-  const imageStyle = useAnimatedStyle(() => {
+  const masonryListStyle = useAnimatedStyle(() => {
     return {
-      opacity: active ? interpolate(scrollY.value, [-100, 0], [0, 1]) : 1,
+      opacity: active ? interpolate(scrollY.value, [-100, 0], [0, 1]) ** 2 : 1,
     };
   });
 
@@ -326,8 +338,8 @@ const ImageStackScreen = ({
       zIndex: 1,
       borderRadius:
         direction.value === "backward"
-          ? interpolate(fade.value, [1, 0], [45, 0])
-          : 0,
+          ? interpolate(fade.value, [1, 0], [45, 20])
+          : 20,
       transform:
         direction.value === "backward"
           ? [
@@ -360,7 +372,6 @@ const ImageStackScreen = ({
   const activeImageStyle = useAnimatedStyle(() => {
     return {
       opacity: 1,
-      borderRadius: interpolate(fade.value, [0, 1], [20, 0]),
     };
   });
 
@@ -394,7 +405,6 @@ const ImageStackScreen = ({
           <Animated.ScrollView
             scrollEventThrottle={1}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ marginTop: 56 }}
             style={[{ flex: 1, overflow: "visible" }, style]}
             onScroll={scrollHandler}
           >
@@ -406,7 +416,7 @@ const ImageStackScreen = ({
               style={[
                 {
                   width: width,
-                  height: width * (1 / data.aspectRatio),
+                  height: width * (1 / Math.min(1, data.aspectRatio)),
                 },
                 topImageStyle,
                 direction.value === "forward" &&
@@ -417,18 +427,17 @@ const ImageStackScreen = ({
               ]}
             />
 
-            <MasonryList>
+            <MasonryList style={masonryListStyle}>
               {subImages.map(({ url, aspectRatio }, index) => (
                 <ImageItem
                   key={index}
                   style={{
                     width: "100%",
                     aspectRatio: Math.min(1, aspectRatio), //(width * 1.75) / 2,
-                    opacity: target.index === index ? 0.5 : 1,
                   }}
                   onPress={(e) => handlePress(e, index)}
                 >
-                  <Animated.View style={[{ flex: 1 }, imageStyle]}>
+                  <Animated.View style={[{ flex: 1 }]}>
                     <AnimatedFastImage
                       source={url}
                       defaultSource={url}
