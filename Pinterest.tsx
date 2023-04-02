@@ -33,7 +33,7 @@ const { width, height: deviceHeight } = Dimensions.get("screen");
 
 const height = deviceHeight;
 
-const AnimatedFastImage = Animated.createAnimatedComponent(Image);
+const AnimatedFastImage = Animated.Image;
 
 interface StackItem {
   url: string;
@@ -178,7 +178,7 @@ const ImageStackScreen = ({
   const safeArea = useSafeAreaInsets();
 
   const subImages = useMemo(() => {
-    return range(24).map((x) => {
+    return range(10).map((x) => {
       const image = getImage();
       return {
         url: image.url,
@@ -236,6 +236,10 @@ const ImageStackScreen = ({
 
   const gestureHandler = useAnimatedGestureHandler({
     onStart: (event, context) => {
+      if (stack.length === 1) {
+        return;
+      }
+
       context.enabled = true;
       context.startX = event.x;
     },
@@ -386,6 +390,10 @@ const ImageStackScreen = ({
 
   const topImageStyle = useAnimatedStyle(() => {
     return {
+      opacity:
+        direction.value === "forward"
+          ? 1 - fade.value
+          : interpolate(fade.value, [0, 1], [1, 0.35], Extrapolate.CLAMP),
       borderRadius: active
         ? interpolate(scrollY.value, [-200, 0], [80, 45], Extrapolate.CLAMP)
         : 45,
@@ -421,22 +429,6 @@ const ImageStackScreen = ({
     };
   });
 
-  const activeImageStyle = useAnimatedStyle(() => {
-    return {
-      opacity: 1,
-    };
-  });
-
-  const inactiveImageStyle = useAnimatedStyle(() => {
-    return {
-      opacity: active
-        ? direction.value === "forward"
-          ? 1 - fade.value
-          : interpolate(fade.value, [0, 1], [1, 0.35], Extrapolate.CLAMP)
-        : 1,
-    };
-  });
-
   useEffect(() => {
     if (active && fade.value === 1) {
       direction.value = "backward";
@@ -463,18 +455,15 @@ const ImageStackScreen = ({
             <AnimatedFastImage
               ref={mainImageRef}
               source={data.url}
+              defaultSource={data.url}
               resizeMode="cover"
               style={[
                 {
                   width: width,
                   height: width * (1 / Math.min(1, data.aspectRatio)),
+                  borderRadius: 45,
                 },
                 topImageStyle,
-                direction.value === "forward" &&
-                !isNil(target.index) &&
-                target.index !== index
-                  ? inactiveImageStyle
-                  : activeImageStyle,
               ]}
             />
 
@@ -571,7 +560,7 @@ const ListItem = ({
       borderRadius:
         direction.value === "backward"
           ? interpolate(fade.value, [1, 0], [45, 10], Extrapolate.CLAMP)
-          : 20,
+          : interpolate(fade.value, [1, 0], [20, 10], Extrapolate.CLAMP),
       transform:
         direction.value === "backward"
           ? [
