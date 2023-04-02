@@ -1,6 +1,6 @@
 # react-native-pinterest
 
-<img src="./preview.webp" />
+<img src="./preview.webp" width="320px" />
 
 ## known issues
 
