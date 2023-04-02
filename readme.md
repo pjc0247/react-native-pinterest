@@ -2,6 +2,8 @@
 
 <img src="./preview.webp" width="320px" />
 
+preview video
+
 ## known issues
 
 - screen flickering (only happens when using expo devmode)
