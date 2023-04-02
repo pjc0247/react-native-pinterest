@@ -71,7 +71,7 @@ const getImage = () => {
 
 const Pinterest = () => {
   const [stack, setStack] = useState<StackItem[]>([]);
-  const scrollX = useSharedValue(0);
+
   const scrollY = useSharedValue(0);
 
   const onPushStack = (
@@ -136,7 +136,6 @@ const Pinterest = () => {
             index={index}
             active={index === stack.length - 1}
             stack={stack}
-            scrollX={scrollX}
             scrollY={scrollY}
             data={x}
             onClickItem={onPushStack}
@@ -152,7 +151,6 @@ interface ImageStackScreenProps {
   index: number;
   active: boolean;
   stack: StackItem[];
-  scrollX: SharedValue<number>;
   scrollY: SharedValue<number>;
   data: StackItem;
   onClickItem: () => void;
@@ -162,7 +160,6 @@ const ImageStackScreen = ({
   index,
   active,
   stack,
-  scrollX,
   scrollY: globalScrollY,
   data,
   onClickItem,
@@ -172,6 +169,7 @@ const ImageStackScreen = ({
   const mainImageRef = useRef();
   const fade = useSharedValue(0);
   const slideBackX = useSharedValue(0);
+  const scrollX = useSharedValue(0);
   const scrollY = useSharedValue(0);
   const direction = useSharedValue<"forward" | "backward">("forward");
   const [target, setTarget] = useState({});
